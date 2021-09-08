@@ -5,22 +5,36 @@ const io = require("@actions/io");
 const path = require("path");
 const os = require("os");
 
-async function installKubectl(version, releaseDate) {
-  const baseUrl = "https://amazon-eks.s3-us-west-2.amazonaws.com";
-  const downloadPath = await download(`${baseUrl}/${version}/${releaseDate}/bin/linux/amd64/kubectl`);
+const binPath = `${os.homedir}/bin`;
+
+async function installKubectl(version) {
+  const baseUrl = `https://dl.k8s.io/release`;
+  const downloadPath = await download(`${baseUrl}/${version}/bin/linux/amd64/kubectl`);
   await install(downloadPath, "kubectl");
+}
+
+async function installVals(version) {
+  const baseUrl = "https://github.com/variantdev/vals/releases/download";
+  const downloadPath = await download(`${baseUrl}/v${version}/vals_${version}_linux_amd64.tar.gz`);
+  const folder = await extract(downloadPath);
+  await install(`${folder}/vals`, "vals");
+}
+
+async function installSops(version) {
+  const baseUrl = "https://github.com/mozilla/sops/releases/download";
+  const downloadPath = await download(`${baseUrl}/${version}/sops-${version}.linux`);
+  await install(downloadPath, "sops");
 }
 
 async function installHelm(version) {
   const downloadPath = await download(`https://get.helm.sh/helm-${version}-linux-amd64.tar.gz`);
   const folder = await extract(downloadPath);
-  console.log(folder);
   await install(`${folder}/linux-amd64/helm`, "helm");
 }
 
 async function installHelmPlugins(plugins) {
   for (const plugin of plugins) {
-    await exec.exec(`helm plugin install ${plugin}`);
+    await exec.exec(`${binPath}/helm plugin install ${plugin}`);
   }
 }
 
@@ -31,27 +45,25 @@ async function installHelmfile(version) {
 }
 
 async function download(url) {
-  console.log("Downloading from : " + url);
-  const downloadPath = await tc.downloadTool(url);
-  console.log("Finish downloading. : " + downloadPath);
-  return downloadPath;
+  return await tc.downloadTool(url);
 }
 
 async function extract(downloadPath) {
-  const folder = await tc.extractTar(downloadPath);
-  return folder;
+  return await tc.extractTar(downloadPath);
 }
 
 async function install(downloadPath, filename) {
-  const binPath = `${os.homedir}/bin`;
   await io.mkdirP(binPath);
   await io.cp(downloadPath, path.join(binPath, filename));
   await exec.exec("chmod", ["+x", `${binPath}/${filename}`]);
   core.addPath(binPath);
+  console.log (`Installed ${filename} in ${binPath}`);
 }
 
 module.exports = {
   installKubectl,
+  installVals,
+  installSops,
   installHelm,
   installHelmPlugins,
   installHelmfile

@@ -4,7 +4,7 @@ const io = require("@actions/io");
 const path = require("path");
 const os = require("os");
 const sp = path.sep;
-const { installKubectl, installHelm, installHelmfile } = require("./setup");
+const { installKubectl, installVals, installSops, installHelm, installHelmfile } = require("./setup");
 
 describe('Normal', () => {
   let downloadToolMock;
@@ -29,9 +29,19 @@ describe('Normal', () => {
     addPathMock = jest.fn(async (path) => {});
   });
   test('Test installKubectl', async () => {
-    await installKubectl("1.14.6", "2019-08-22");
-    expect(downloadToolMock.mock.calls[0][0]).toBe("https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl");
+    await installKubectl("v1.14.6");
+    expect(downloadToolMock.mock.calls[0][0]).toBe("https://dl.k8s.io/release/v1.14.6/bin/linux/amd64/kubectl");
     expect(cpMock.mock.calls[0][1]).toBe(`${os.homedir}${sp}bin${sp}kubectl`);
+  });
+  test('Test installVals', async () => {
+    await installVals("0.14.0");
+    expect(downloadToolMock.mock.calls[0][0]).toBe("https://github.com/variantdev/vals/releases/download/v0.14.0/vals_0.14.0_linux_amd64.tar.gz");
+    expect(cpMock.mock.calls[0][1]).toBe(`${os.homedir}${sp}bin${sp}vals`);
+  });
+  test('Test installSops', async () => {
+    await installSops("v3.7.1");
+    expect(downloadToolMock.mock.calls[0][0]).toBe("https://github.com/mozilla/sops/releases/download/v3.7.1/sops-v3.7.1.linux");
+    expect(cpMock.mock.calls[0][1]).toBe(`${os.homedir}${sp}bin${sp}sops`);
   });
   test('Test installHelm', async () => {
     await installHelm("v3.0.3");
